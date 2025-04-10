@@ -7,7 +7,7 @@ einops
 timm
 opencv-python
 elasticdeform
-numpy
+numpy==1.26.4
 nibabel
 scipy
 tqdm
@@ -16,3 +16,4 @@ pandas
 glob2
 scikit-image
 scikit-learn
+SimpleITK
