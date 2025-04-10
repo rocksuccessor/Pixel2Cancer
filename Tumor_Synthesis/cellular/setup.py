@@ -8,7 +8,7 @@ import torch
 from setuptools import find_packages, setup
 from torch.utils.cpp_extension import CUDA_HOME, CppExtension, CUDAExtension, BuildExtension
 
-extra_compile_args = {"cxx": ["-std=c++14"]}
+extra_compile_args = {"cxx": ["-std=c++17"]}
 define_macros = []
 
 CUDA_HOME = '/usr/local/cuda'
