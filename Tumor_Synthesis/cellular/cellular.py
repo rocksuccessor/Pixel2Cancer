@@ -30,9 +30,14 @@ if __name__ == '__main__':
     current_state = torch.zeros((3, 5, 5), dtype=torch.int32).cuda()
     current_state[1, 2, 2] = 1
     
-    current_state = update_cellular(current_state, (3, 3, 3))
+    # Provide values for ranges, thresholds, and flag
+    ranges = (3, 3, 3)  # Example values, adjust as needed
+    thresholds = (0, 1, 2, 3)  # Example values, adjust as needed
+    flag = 1  # Example value, adjust as needed
+
+    current_state = update_cellular(current_state, current_state, ranges, thresholds, flag)  # Pass all required arguments
     print(current_state.sum())
-    current_state = update_cellular(current_state, (3, 3, 3))
+    current_state = update_cellular(current_state, current_state, ranges, thresholds, flag)  # Pass all required arguments
     print(current_state.sum())
-    current_state = update_cellular(current_state, (3, 3, 3))
+    current_state = update_cellular(current_state, current_state, ranges, thresholds, flag)  # Pass all required arguments
     print(current_state.sum())
