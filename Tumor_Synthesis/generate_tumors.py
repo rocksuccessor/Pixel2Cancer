@@ -273,7 +273,7 @@ def main():
 
 
     # random select a start point
-    for i in range(10):
+    for i in range(1):
             # crop the organ
         cropped_organ_region = mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
         cropped_img = img[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
@@ -300,7 +300,8 @@ def main():
             density_organ_map, dtype=torch.int32).cuda(device='cuda:0')
         
         try_time = 0
-        try_max = np.random.randint(1, 6)
+        try_max = np.random.randint(1, 1)
+        # try_max = np.random.randint(1, 6)
         print(try_max)
         while try_time < try_max:
             try_time += 1
