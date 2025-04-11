@@ -2,7 +2,7 @@ import torch
 from Cellular import _C
 
 
-def update_cellular(state_tensor, density_state_tensor, ranges, thresholds, flag=1, grow_per_cell=1, max_try=-1):
+def update_cellular(state_tensor, density_state_tensor, ranges, thresholds, flag=0, grow_per_cell=1, max_try=-1):
     if max_try < 0:
         max_try = grow_per_cell * 3
     
