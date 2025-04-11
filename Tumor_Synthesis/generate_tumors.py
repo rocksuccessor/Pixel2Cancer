@@ -239,7 +239,9 @@ def main():
     # print(train_list)
 
     save_path = '../result'
-     
+    
+    os.makedirs(os.path.join(save_path, 'img'), exist_ok=True)
+    os.makedirs(os.path.join(save_path, 'mask'), exist_ok=True)
     # train_list = [] 
     # initial
     steps = 50  # step
@@ -300,7 +302,7 @@ def main():
             density_organ_map, dtype=torch.int32).cuda(device='cuda:0')
         
         try_time = 0
-        try_max = np.random.randint(1, 1)
+        try_max = np.random.randint(1, 2)
         # try_max = np.random.randint(1, 6)
         print(try_max)
         while try_time < try_max:
@@ -345,20 +347,30 @@ def main():
             step += 10 
             img_out = map_to_CT_value(cropped_img, tumor_out, density_organ_map,
                                     step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
-            save_name = os.path.basename(file) + '_' + str(i) + '_' + str(step) + '.nii.gz'
+            # save_name = os.path.basename(file) + '_' + str(i) + '_' + str(step) + '.nii.gz'
         
-            # save the result
-            img_save = img.copy()
-            img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
-            save = sitk.GetImageFromArray(img_save)
-            sitk.WriteImage(save, save_path + '/img/' +save_name)
+            # # save the result
+            # img_save = img.copy()
+            # img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
+            # save = sitk.GetImageFromArray(img_save)
+            # sitk.WriteImage(save, save_path + '/img/' +save_name)
 
-            mask_save = np.zeros_like(img_save)
-            mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
-            mask_save[mask_save > 0] = 1
+            # mask_save = np.zeros_like(img_save)
+            # mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
+            # mask_save[mask_save > 0] = 1
 
-            save = sitk.GetImageFromArray(mask_save)
-            sitk.WriteImage(save, save_path + '/mask/' +save_name)
+            # save = sitk.GetImageFromArray(mask_save)
+            # sitk.WriteImage(save, save_path + '/mask/' +save_name)
+
+            save_name = f"{file}_{i}_{step}.nii.gz"
+
+            # Save image result
+            output_img_path = os.path.join(save_path, 'img', save_name)
+            save_result_image(img_out, output_img_path)
+
+            # Save mask result
+            mask_save_path = os.path.join(save_path, 'mask', save_name)
+            save_result_mask(tumor_out[step], mask_save_path)
 
             save_list.append(save_name)
 
@@ -366,6 +378,17 @@ def main():
         for item in save_list:
             f.write(item + '\n')
     
+
+
+def save_result_image(img_out, path):
+    """Helper function to save image arrays"""
+    sitk_image = sitk.GetImageFromArray(img_out)
+    sitk.WriteImage(sitk_image, path)
+
+def save_result_mask(mask_out, path):
+    """Helper function to save mask arrays"""
+    sitk_mask = sitk.GetImageFromArray(mask_out.astype(np.uint8))
+    sitk.WriteImage(sitk_mask, path)
 
 if __name__ == "__main__":
     main()
