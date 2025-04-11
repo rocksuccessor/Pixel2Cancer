@@ -232,13 +232,16 @@ def main():
     #     './datafolds/healthy.json', '/ccvl/net/ccvl15/zzhou82/PublicAbdominalData')
     # print(train_list)
 
-    file_list = '../list/healthy_list.csv'
-    with open(file_list, 'r') as f:
-        lines = f.readlines()
-    train_list = [line.strip() for line in lines]
-    print(train_list)
-    save_path = '/ccvl/net/ccvl15/yuxiang/04_LITS'
-     # initial
+    # file_list = '../list/healthy_list.csv'
+    # with open(file_list, 'r') as f:
+    #     lines = f.readlines()
+    # train_list = [line.strip() for line in lines]
+    # print(train_list)
+
+    save_path = '../result'
+     
+    # train_list = [] 
+    # initial
     steps = 50  # step
     kernel_size = (3, 3, 3)  # Receptive Field
     organ_hu_lowerbound = Organ_HU['liver'][0]  # organ hu lowerbound
@@ -248,113 +251,115 @@ def main():
     
     save_list = []
 
-    for file in train_list:
+    # for file in train_list:
        
 
-        img = sitk.ReadImage(file + '/ct.nii.gz')
-        img = sitk.GetArrayFromImage(img)
-        mask = sitk.ReadImage(file + '/original_label.nii.gz')
-        mask = sitk.GetArrayFromImage(mask)
+    # img = sitk.ReadImage(file + '/ct.nii.gz')
+    file = "liv-100"
+    img = sitk.ReadImage('../data/volume-100.nii.gz')
+    img = sitk.GetArrayFromImage(img)
+    mask = sitk.ReadImage('../data/segmentation-100.nii.gz')
+    mask = sitk.GetArrayFromImage(mask)
 
-        # load organ and quantify
-        # get the organ region
-        organ_region = np.where(np.isin(mask, Organ_List['liver']))
-        min_x = min(organ_region[0])
-        max_x = max(organ_region[0])
-        min_y = min(organ_region[1])
-        max_y = max(organ_region[1])
-        min_z = min(organ_region[2])
-        max_z = max(organ_region[2])
+    # load organ and quantify
+    # get the organ region
+    organ_region = np.where(np.isin(mask, Organ_List['liver']))
+    min_x = min(organ_region[0])
+    max_x = max(organ_region[0])
+    min_y = min(organ_region[1])
+    max_y = max(organ_region[1])
+    min_z = min(organ_region[2])
+    max_z = max(organ_region[2])
 
 
-        # random select a start point
-        for i in range(10):
-             # crop the organ
-            cropped_organ_region = mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
-            cropped_img = img[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
-            print(cropped_organ_region.shape)
-            print(cropped_img.shape)
+    # random select a start point
+    for i in range(10):
+            # crop the organ
+        cropped_organ_region = mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
+        cropped_img = img[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
+        print(cropped_organ_region.shape)
+        print(cropped_img.shape)
 
-            # Quantify the density of the organ
-            select_organ_region = np.isin(cropped_organ_region, Organ_List['liver'])
-            processed_organ_region = cropped_img.copy()
-            processed_organ_region[~select_organ_region] = outrange_standard_val
-            processed_organ_region[processed_organ_region >
-                                outrange_standard_val] = outrange_standard_val
+        # Quantify the density of the organ
+        select_organ_region = np.isin(cropped_organ_region, Organ_List['liver'])
+        processed_organ_region = cropped_img.copy()
+        processed_organ_region[~select_organ_region] = outrange_standard_val
+        processed_organ_region[processed_organ_region >
+                            outrange_standard_val] = outrange_standard_val
 
+    
+
+        processed_organ_region, density_organ_map = Quantify(processed_organ_region, organ_hu_lowerbound, organ_standard_val, outrange_standard_val)
+        save = sitk.GetImageFromArray(density_organ_map)  
+        sitk.WriteImage(save, '../result/test_soft.nii.gz')
+
+
+        current_state = torch.tensor(
+            processed_organ_region, dtype=torch.int32).cuda(device='cuda:0')
+        density_organ_state = torch.tensor(
+            density_organ_map, dtype=torch.int32).cuda(device='cuda:0')
         
-
-            processed_organ_region, density_organ_map = Quantify(processed_organ_region, organ_hu_lowerbound, organ_standard_val, outrange_standard_val)
-            save = sitk.GetImageFromArray(density_organ_map)  
-            sitk.WriteImage(save, '../test_result/test_soft.nii.gz')
-
-
-            current_state = torch.tensor(
-                processed_organ_region, dtype=torch.int32).cuda(device='cuda:0')
-            density_organ_state = torch.tensor(
-                density_organ_map, dtype=torch.int32).cuda(device='cuda:0')
+        try_time = 0
+        try_max = np.random.randint(1, 6)
+        print(try_max)
+        while try_time < try_max:
+            try_time += 1
+            matching_indices = np.argwhere(
+                processed_organ_region == organ_standard_val)
+            if matching_indices.size > 0:
+                random_index = np.random.choice(matching_indices.shape[0])
+                start_point = matching_indices[random_index]
+                large = np.random.randint(0,3)
             
-            try_time = 0
-            try_max = np.random.randint(1, 6)
-            print(try_max)
-            while try_time < try_max:
-                try_time += 1
-                matching_indices = np.argwhere(
-                    processed_organ_region == organ_standard_val)
-                if matching_indices.size > 0:
-                    random_index = np.random.choice(matching_indices.shape[0])
-                    start_point = matching_indices[random_index]
-                    large = np.random.randint(0,3)
-                
-                    processed_organ_region[start_point[0], start_point[1], start_point[2]] = threshold/2  # start point initialize
-                    current_state[start_point[0], start_point[1], start_point[2]] = threshold/2
-                    if large == 0:
-                        x_offset = np.random.randint(-10,10)
-                        y_offset = np.random.randint(-10,10)
-                        z_offset = np.random.randint(-10,10)
-                        if processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] == organ_standard_val:
-                            processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
-                            current_state[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
-                            
-                        x_offset = np.random.randint(-10,10)
-                        y_offset = np.random.randint(-10,10)
-                        z_offset = np.random.randint(-10,10)
-                        if  processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] == organ_standard_val:
-                            processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
-                            current_state[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
+                processed_organ_region[start_point[0], start_point[1], start_point[2]] = threshold/2  # start point initialize
+                current_state[start_point[0], start_point[1], start_point[2]] = threshold/2
+                if large == 0:
+                    x_offset = np.random.randint(-10,10)
+                    y_offset = np.random.randint(-10,10)
+                    z_offset = np.random.randint(-10,10)
+                    if processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] == organ_standard_val:
+                        processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
+                        current_state[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
+                        
+                    x_offset = np.random.randint(-10,10)
+                    y_offset = np.random.randint(-10,10)
+                    z_offset = np.random.randint(-10,10)
+                    if  processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] == organ_standard_val:
+                        processed_organ_region[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
+                        current_state[start_point[0] + x_offset, start_point[1] + y_offset, start_point[2] + z_offset] = threshold/2
 
-                    print(start_point)
-                current_state[start_point[0], start_point[1], start_point[2]] = threshold/2  # start point initialize
-                
-            all_states = []  # states of each step
-
-            # simulate tumor growth
-            tumor_out = grow_tumor(current_state, density_organ_state, kernel_size, steps, all_states,
-                                organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map)
-
-            # map to CT value
-            print(cropped_img.dtype)
-            step = 0
-            while step<steps:
-                step += 10 
-                img_out = map_to_CT_value(cropped_img, tumor_out, density_organ_map,
-                                        step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
-                save_name = os.path.basename(file) + '_' + str(i) + '_' + str(step) + '.nii.gz'
+                print(start_point)
+            current_state[start_point[0], start_point[1], start_point[2]] = threshold/2  # start point initialize
             
-                # save the result
-                img_save = img.copy()
-                img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
-                save = sitk.GetImageFromArray(img_save)
-                sitk.WriteImage(save, save_path + '/img/' +save_name)
+        all_states = []  # states of each step
 
-                mask_save = np.zeros_like(img_save)
-                mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
-                mask_save[mask_save > 0] = 1
+        # simulate tumor growth
+        tumor_out = grow_tumor(current_state, density_organ_state, kernel_size, steps, all_states,
+                            organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map)
 
-                save = sitk.GetImageFromArray(mask_save)
-                sitk.WriteImage(save, save_path + '/mask/' +save_name)
+        # map to CT value
+        print(cropped_img.dtype)
+        step = 0
+        while step<steps:
+            step += 10 
+            img_out = map_to_CT_value(cropped_img, tumor_out, density_organ_map,
+                                    step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
+            save_name = os.path.basename(file) + '_' + str(i) + '_' + str(step) + '.nii.gz'
+        
+            # save the result
+            img_save = img.copy()
+            img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
+            save = sitk.GetImageFromArray(img_save)
+            sitk.WriteImage(save, save_path + '/img/' +save_name)
 
-                save_list.append(save_name)
+            mask_save = np.zeros_like(img_save)
+            mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
+            mask_save[mask_save > 0] = 1
+
+            save = sitk.GetImageFromArray(mask_save)
+            sitk.WriteImage(save, save_path + '/mask/' +save_name)
+
+            save_list.append(save_name)
 
     with open( '../list/save_list.csv', 'w') as f:
         for item in save_list:
