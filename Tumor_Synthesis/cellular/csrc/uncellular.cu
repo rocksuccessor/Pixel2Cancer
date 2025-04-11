@@ -1,4 +1,4 @@
-__global__ void UpdateCellularKernel(
+__global__ void UnupdateCellularKernel(
     const int* state_tensor_prev,
     int* density_state_tensor,
     const int H,
@@ -38,7 +38,6 @@ __global__ void UpdateCellularKernel(
             if (curr_val < threshold){
                 atomicAdd(state_tensor + (y) * (W * D) + (x) * D + (z), -1);
             }
-
             
             atomicAdd(state_tensor + (y) * (W * D) + (x) * D + (z), ungrow_tensor[pid]);
         }
