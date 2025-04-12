@@ -1,3 +1,38 @@
+__global__ void UngrowTensorKernel(
+    const int* state_tensor_prev,
+    int* density_state_tensor,
+    const int H,
+    const int W,
+    const int D,
+    const int Y_range,
+    const int X_range,
+    const int Z_range,
+    const int grow_per_cell,
+    const int max_try,
+    const int organ_hu_lowerbound,
+    const int organ_standard_val,
+    const int outrange_standard_val,
+    const int threshold,
+    const bool flag,
+    int* state_tensor // (H, W, D)
+){
+    const int num_threads = gridDim.x * blockDim.x;
+    const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (int pid = tid; pid < H * W * D; pid += num_threads) {
+        const int curr_val = state_tensor_prev[pid];
+        if (curr_val == organ_standard_val || curr_val >= outrange_standard_val){
+            continue;
+        }
+
+        if(curr_val == threshold){
+            continue; // Reverse Invasion principle
+        }
+
+        
+    }
+}
+
 __global__ void UnupdateCellularKernel(
     const int* state_tensor_prev,
     int* density_state_tensor,
@@ -75,6 +110,14 @@ at::Tensor UnupdateCellular(
     
     // const size_t blocks = 32;
     // const size_t threads = 8;
+
+
+    int* ungrow_tensor;
+    cudaMalloc(ungrow_tensor, sizeof(int) * H * W * D);
+
+    UngrowTensorKernel<<<blocks, threads, 0, stream>>>(
+
+    )
 
     // Launch the cuda kernel
     UnupdateCellularKernel<<<blocks, threads, 0, stream>>>(
