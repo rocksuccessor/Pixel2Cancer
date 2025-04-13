@@ -258,9 +258,9 @@ def main():
 
     # img = sitk.ReadImage(file + '/ct.nii.gz')
     file = "liv-100"
-    img = sitk.ReadImage('../data/volume-100.nii.gz')
+    img = sitk.ReadImage('/content/drive/MyDrive/dataset/volume-52.nii')
     img = sitk.GetArrayFromImage(img)
-    mask = sitk.ReadImage('../data/segmentation-100.nii.gz')
+    mask = sitk.ReadImage('/content/drive/MyDrive/dataset/segmentation-52.nii')
     mask = sitk.GetArrayFromImage(mask)
 
     # load organ and quantify
@@ -293,7 +293,7 @@ def main():
 
         processed_organ_region, density_organ_map = Quantify(processed_organ_region, organ_hu_lowerbound, organ_standard_val, outrange_standard_val)
         save = sitk.GetImageFromArray(density_organ_map)  
-        sitk.WriteImage(save, '../result/test_soft.nii.gz')
+        sitk.WriteImage(save, '/content/drive/MyDrive/dataset/my_output.nii.gz')
 
 
         current_state = torch.tensor(
