@@ -238,7 +238,7 @@ def main():
     # train_list = [line.strip() for line in lines]
     # print(train_list)
 
-    save_path = '../result'
+    save_path = '/content/drive/MyDrive/dataset'
     
     os.makedirs(os.path.join(save_path, 'img'), exist_ok=True)
     os.makedirs(os.path.join(save_path, 'mask'), exist_ok=True)
@@ -275,7 +275,7 @@ def main():
 
 
     # random select a start point
-    for i in range(1):
+    for i in range(10):
             # crop the organ
         cropped_organ_region = mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
         cropped_img = img[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
@@ -347,20 +347,20 @@ def main():
             step += 10 
             img_out = map_to_CT_value(cropped_img, tumor_out, density_organ_map,
                                     step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
-            # save_name = os.path.basename(file) + '_' + str(i) + '_' + str(step) + '.nii.gz'
+            save_name = '_' + str(i) + '_' + str(step) + '.nii.gz'
         
             # # save the result
-            # img_save = img.copy()
-            # img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
-            # save = sitk.GetImageFromArray(img_save)
-            # sitk.WriteImage(save, save_path + '/img/' +save_name)
+            img_save = img.copy()
+            img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
+            save = sitk.GetImageFromArray(img_save)
+            sitk.WriteImage(save, save_path + '/img/' +save_name)
 
-            # mask_save = np.zeros_like(img_save)
-            # mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
-            # mask_save[mask_save > 0] = 1
+            mask_save = np.zeros_like(img_save)
+            mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
+            mask_save[mask_save > 0] = 1
 
-            # save = sitk.GetImageFromArray(mask_save)
-            # sitk.WriteImage(save, save_path + '/mask/' +save_name)
+            save = sitk.GetImageFromArray(mask_save)
+            sitk.WriteImage(save, save_path + '/mask/' +save_name)
 
             save_name = f"{file}_{i}_{step}.nii.gz"
 
