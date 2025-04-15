@@ -29,8 +29,24 @@ __global__ void UngrowTensorKernel(
             continue; // Reverse Invasion principle
         }
 
-        
+        int window_size = Y_range * X_range * Z_range - 1;
+        n = eligible_cells_in_window(window)
+
+        def eligibility(pixel):
+            if original_density_state_tensor[pixel] == outrange_standard_val:
+                return pixel.val != organ_standard_val
+            else:
+                return pixel.val not in {organ_standard_val, outrange_standard_val}
+
+        ungrow_contribution = min(max_try/window_size, grow_per_cell/n)
+        atomicAdd(each eligible pixel, ungrow_contribution)
     }
+}
+
+tensor& collapse_ungrow_tensor(tensor& ungrow_tensor, prob_ungrow_tensor, prob_base){
+    cudaSetZeroes(ungrow_tensor)
+    cudaDivide(prob_ungrow_tensor, prob_base)
+    
 }
 
 __global__ void UnupdateCellularKernel(
@@ -111,13 +127,18 @@ at::Tensor UnupdateCellular(
     // const size_t blocks = 32;
     // const size_t threads = 8;
 
+    float* ungrow_tensor;
+    cudaMalloc(ungrow_tensor, sizeof(float) * H * W * D);
 
     int* ungrow_tensor;
     cudaMalloc(ungrow_tensor, sizeof(int) * H * W * D);
 
     UngrowTensorKernel<<<blocks, threads, 0, stream>>>(
-
+        prob_ungrow_tensor
     )
+
+    collapse_ungrow_tensor(prob_ungrow_tensor, ungrow_tensor, 
+        prob_base = max(max_try, grow_per_cell))
 
     // Launch the cuda kernel
     UnupdateCellularKernel<<<blocks, threads, 0, stream>>>(
