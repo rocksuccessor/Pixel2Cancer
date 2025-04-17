@@ -345,9 +345,13 @@ def main():
         step = 0
         while step<steps:
             step += 10 
+
+            save_name = '_' + str(i) + '_' + str(step) + '.nii.gz'
+            save = sitk.GetImageFromArray(tumor_out[step])
+            sitk.WriteImage(save, '/content/drive/MyDrive/dataset/tumor_out' + save_name)
+
             img_out = map_to_CT_value(cropped_img, tumor_out, density_organ_map,
                                     step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
-            save_name = '_' + str(i) + '_' + str(step) + '.nii.gz'
         
             # # save the result
             img_save = img.copy()
