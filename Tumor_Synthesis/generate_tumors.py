@@ -296,7 +296,7 @@ def main():
 
         processed_organ_region, density_organ_map = Quantify(processed_organ_region, organ_hu_lowerbound, organ_standard_val, outrange_standard_val)
         save = sitk.GetImageFromArray(density_organ_map)  
-        sitk.WriteImage(save, '/content/drive/MyDrive/dataset/my_output.nii.gz')
+        sitk.WriteImage(save, f'/content/drive/MyDrive/dataset/{run_id}_density_organ_map.nii.gz')
 
 
         current_state = torch.tensor(
