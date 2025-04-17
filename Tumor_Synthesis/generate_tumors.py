@@ -9,6 +9,7 @@ import cv2
 import math
 # import datafolds.datafold_read as datafold_read
 import os
+import time
 
 Organ_List = {'liver': [1,2], 'liver2': [6, 15], 'pancreas': [11]}
 Organ_HU = {'liver': [100, 160]}
@@ -253,11 +254,13 @@ def main():
     
     save_list = []
 
+    # Generate a run identifier using a timestamp
+    run_id = time.strftime("%Y%m%d_%H%M%S")
+
     # for file in train_list:
        
 
     # img = sitk.ReadImage(file + '/ct.nii.gz')
-    file = "liv-100"
     img = sitk.ReadImage('/content/drive/MyDrive/dataset/volume-52.nii')
     img = sitk.GetArrayFromImage(img)
     mask = sitk.ReadImage('/content/drive/MyDrive/dataset/segmentation-52.nii')
@@ -343,12 +346,12 @@ def main():
         # map to CT value
         print(cropped_img.dtype)
         step = 0
-        while step<steps:
-            step += 10 
+        while step < steps:
+            step += 10
 
-            save_name = '_' + str(i) + '_' + str(step) + '.nii.gz'
+            save_name = f"{run_id}_{i}_{step}.nii.gz"
             save = sitk.GetImageFromArray(tumor_out[step])
-            sitk.WriteImage(save, '/content/drive/MyDrive/dataset/tumor_out' + save_name)
+            sitk.WriteImage(save, os.path.join(save_path, 'tumor_out', save_name))
 
             img_out = map_to_CT_value(cropped_img, tumor_out, density_organ_map,
                                     step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
@@ -357,24 +360,14 @@ def main():
             img_save = img.copy()
             img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
             save = sitk.GetImageFromArray(img_save)
-            sitk.WriteImage(save, save_path + '/img/' +save_name)
+            sitk.WriteImage(save, os.path.join(save_path, 'img', save_name))
 
             mask_save = np.zeros_like(img_save)
             mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
             mask_save[mask_save > 0] = 1
 
             save = sitk.GetImageFromArray(mask_save)
-            sitk.WriteImage(save, save_path + '/mask/' +save_name)
-
-            save_name = f"{file}_{i}_{step}.nii.gz"
-
-            # Save image result
-            output_img_path = os.path.join(save_path, 'img', save_name)
-            save_result_image(img_out, output_img_path)
-
-            # Save mask result
-            mask_save_path = os.path.join(save_path, 'mask', save_name)
-            save_result_mask(tumor_out[step], mask_save_path)
+            sitk.WriteImage(save, os.path.join(save_path, 'mask', save_name))
 
             save_list.append(save_name)
 
