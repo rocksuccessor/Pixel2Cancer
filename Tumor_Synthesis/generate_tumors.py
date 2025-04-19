@@ -18,7 +18,7 @@ Organ_HU = {'liver': [100, 160]}
 
 
 def grow_tumor(current_state, density_organ_state, kernel_size, steps, save_frequency, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map,
-               run_id, i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list
+               run_id, outside_i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list
                ):
     # process
     original_state = current_state.cpu().numpy().copy()
@@ -30,7 +30,7 @@ def grow_tumor(current_state, density_organ_state, kernel_size, steps, save_freq
         temp[temp >= outrange_standard_val] = 0
         temp[temp >= threshold] = threshold
         if i % save_frequency == 0:
-            save(temp, run_id, i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list)
+            save(temp, run_id, outside_i, i, img, cropped_img, density_organ_map, save_path, min_x, max_x, min_y, max_y, min_z, max_z, threshold, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, start_point, save_list)
 
     # Blur the tumor map
     temp = temp.astype(np.int16)
@@ -40,7 +40,7 @@ def grow_tumor(current_state, density_organ_state, kernel_size, steps, save_freq
         temp[z] = cv2.GaussianBlur(temp[z], kernel, 0)
         # temp[z] = cv2.filter2D(temp[z], -1, sharpen_kernel)
 
-    save(temp, run_id, i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list)
+    save(temp, run_id, outside_i, steps, img, cropped_img, density_organ_map, save_path, min_x, max_x, min_y, max_y, min_z, max_z, threshold, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, start_point, save_list)
 
     unique_values, counts = np.unique(temp, return_counts=True)
     for value, count in zip(unique_values, counts):
@@ -278,7 +278,7 @@ def main():
     save_list = []
 
     # Generate a run identifier using a timestamp
-    run_id = f"{config.file_id}_{time.strftime("%Y%m%d_%H%M%S")}"
+    run_id = f"{config.file_id}_{time.strftime('%Y%m%d_%H%M%S')}"
 
     # for file in train_list:
        
