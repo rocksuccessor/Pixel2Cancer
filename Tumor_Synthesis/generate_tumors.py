@@ -17,7 +17,9 @@ Organ_List = {'liver': [1,2], 'liver2': [6, 15], 'pancreas': [11]}
 Organ_HU = {'liver': [100, 160]}
 
 
-def grow_tumor(current_state, density_organ_state, kernel_size, steps, all_states, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map):
+def grow_tumor(current_state, density_organ_state, kernel_size, steps, save_frequency, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map,
+               run_id, i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list
+               ):
     # process
     original_state = current_state.cpu().numpy().copy()
     for i in range(steps+1):
@@ -25,29 +27,24 @@ def grow_tumor(current_state, density_organ_state, kernel_size, steps, all_state
             organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold)).clamp(max=(outrange_standard_val + 2))
         temp = current_state.cpu().numpy().copy()
         # print(np.sum(temp==0))
-        all_states.append(temp)
-
-    all_states = np.array(all_states)
-
-    # postprocess
-    all_states[all_states >= outrange_standard_val] = 0
-    all_states[all_states >= threshold] = threshold
+        temp[temp >= outrange_standard_val] = 0
+        temp[temp >= threshold] = threshold
+        if i % save_frequency == 0:
+            save(temp, run_id, i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list)
 
     # Blur the tumor map
-    temp = all_states[steps].astype(np.int16)
+    temp = temp.astype(np.int16)
     kernel = (3, 3)
 
     for z in range(temp.shape[0]):
         temp[z] = cv2.GaussianBlur(temp[z], kernel, 0)
         # temp[z] = cv2.filter2D(temp[z], -1, sharpen_kernel)
 
-    # save the tumor map
-    all_states[steps] = temp
+    save(temp, run_id, i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list)
 
-    unique_values, counts = np.unique(all_states[steps], return_counts=True)
+    unique_values, counts = np.unique(temp, return_counts=True)
     for value, count in zip(unique_values, counts):
         print(f"value: {value} times: {count} ")
-    return all_states
 
     # for i in range(steps):
     #     cpl3d.plot3d(all_states, timestep=i)
@@ -171,10 +168,10 @@ def Quantify(processed_organ_region, organ_hu_lowerbound, organ_standard_val, ou
     
     return processed_organ_region, density_organ_map
 
-def map_to_CT_value(img, tumor, density_organ_map, steps, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point):
+def map_to_CT_value(img, tumor_state, density_organ_map, steps, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point):
 
     img = img.astype(np.float32)
-    tumor = tumor[steps].astype(np.float32)
+    tumor = tumor_state.astype(np.float32)
     density_organ_map = density_organ_map.astype(np.float32)
 
 
@@ -228,6 +225,30 @@ def map_to_CT_value(img, tumor, density_organ_map, steps, threshold, outrange_st
     return map_img
 
 
+def save(step_state, run_id, i, step, img, cropped_img, density_organ_map, save_path, min_x, max_x, min_y, max_y, min_z, max_z, threshold, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, start_point, save_list):
+    save_name = f"{run_id}_{i}_{step}.nii.gz"
+    save = sitk.GetImageFromArray(step_state)
+    sitk.WriteImage(save, os.path.join(save_path, 'tumor_out', save_name))
+
+    img_out = map_to_CT_value(cropped_img, step_state, density_organ_map,
+                            step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
+
+    # # save the result
+    img_save = img.copy()
+    img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
+    save = sitk.GetImageFromArray(img_save)
+    sitk.WriteImage(save, os.path.join(save_path, 'img', save_name))
+    save_list.append(save_name)
+
+    state_save = np.zeros_like(img_save)
+    state_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = step_state
+    state_save[state_save > 0] = 1
+    
+    save = sitk.GetImageFromArray(state_save)
+    sitk.WriteImage(save, os.path.join(save_path, 'state', save_name))
+    
+    save_list.append(save_name)
+
 
 def main():
 
@@ -257,7 +278,7 @@ def main():
     save_list = []
 
     # Generate a run identifier using a timestamp
-    run_id = time.strftime("%Y%m%d_%H%M%S")
+    run_id = f"{config.file_id}_{time.strftime("%Y%m%d_%H%M%S")}"
 
     # for file in train_list:
        
@@ -338,40 +359,17 @@ def main():
 
                 print(start_point)
             current_state[start_point[0], start_point[1], start_point[2]] = threshold/2  # start point initialize
-            
-        all_states = []  # states of each step
-
-        # simulate tumor growth
-        tumor_out = grow_tumor(current_state, density_organ_state, kernel_size, steps, all_states,
-                            organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map)
 
         # map to CT value
         print(cropped_img.dtype)
-        step = 0
-        while step < steps:
-            step += 10
 
-            save_name = f"{run_id}_{i}_{step}.nii.gz"
-            save = sitk.GetImageFromArray(tumor_out[step])
-            sitk.WriteImage(save, os.path.join(save_path, 'tumor_out', save_name))
+        save_frequency = 10
 
-            img_out = map_to_CT_value(cropped_img, tumor_out, density_organ_map,
-                                    step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
-        
-            # # save the result
-            img_save = img.copy()
-            img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
-            save = sitk.GetImageFromArray(img_save)
-            sitk.WriteImage(save, os.path.join(save_path, 'img', save_name))
-
-            mask_save = np.zeros_like(img_save)
-            mask_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = tumor_out[step]
-            mask_save[mask_save > 0] = 1
-
-            save = sitk.GetImageFromArray(mask_save)
-            sitk.WriteImage(save, os.path.join(save_path, 'mask', save_name))
-
-            save_list.append(save_name)
+        # simulate tumor growth
+        tumor_out = grow_tumor(current_state, density_organ_state, kernel_size, steps, save_frequency,
+                            organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map,
+                            run_id, i, img, cropped_img, save_path, min_x, max_x, min_y, max_y, min_z, max_z, start_point, save_list
+                            )
 
     with open( '../list/save_list.csv', 'w') as f:
         for item in save_list:
