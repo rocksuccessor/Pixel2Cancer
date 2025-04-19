@@ -301,7 +301,7 @@ def main():
 
 
     # random select a start point
-    for i in range(10):
+    for i in range(2):
             # crop the organ
         cropped_organ_region = mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
         cropped_img = img[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1].copy()
