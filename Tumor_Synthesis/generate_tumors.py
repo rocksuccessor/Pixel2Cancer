@@ -11,6 +11,8 @@ import math
 import os
 import time
 
+import config
+
 Organ_List = {'liver': [1,2], 'liver2': [6, 15], 'pancreas': [11]}
 Organ_HU = {'liver': [100, 160]}
 
@@ -261,9 +263,9 @@ def main():
        
 
     # img = sitk.ReadImage(file + '/ct.nii.gz')
-    img = sitk.ReadImage('/content/drive/MyDrive/dataset/volume-52.nii')
+    img = sitk.ReadImage(config.volume_path)
     img = sitk.GetArrayFromImage(img)
-    mask = sitk.ReadImage('/content/drive/MyDrive/dataset/segmentation-52.nii')
+    mask = sitk.ReadImage(config.segmentation_path)
     mask = sitk.GetArrayFromImage(mask)
 
     # load organ and quantify
