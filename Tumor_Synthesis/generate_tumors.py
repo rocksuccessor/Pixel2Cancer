@@ -240,9 +240,9 @@ def save(step_state, run_id, i, step, img, cropped_img, density_organ_map, save_
     sitk.WriteImage(save, os.path.join(save_path, 'img', save_name))
     save_list.append(save_name)
 
-    state_save = np.zeros_like(img_save)
-    state_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = step_state
-    state_save[state_save > 0] = 1
+    mask = np.zeros_like(img_save)
+    mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = step_state
+    mask[mask > 0] = 1
     
     save = sitk.GetImageFromArray(state_save)
     sitk.WriteImage(save, os.path.join(save_path, 'state', save_name))
