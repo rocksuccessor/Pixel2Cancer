@@ -41,13 +41,17 @@ __global__ void UngrowTensorKernel(
         ungrow_contribution = min(max_try/window_size, grow_per_cell/n)
         atomicAdd(each eligible pixel, ungrow_contribution)
     }
+
+    for (int pid = tid; pid < H * W * D; pid += num_threads) {
+        ungrow_tensor[pid] = round(ungrow_tensor[pid]);
+    }
 }
 
-tensor& collapse_ungrow_tensor(tensor& ungrow_tensor, prob_ungrow_tensor, prob_base){
-    cudaSetZeroes(ungrow_tensor)
-    cudaDivide(prob_ungrow_tensor, prob_base)
+// tensor& collapse_ungrow_tensor(tensor& ungrow_tensor, prob_ungrow_tensor, prob_base){
+//     cudaSetZeroes(ungrow_tensor)
+//     cudaDivide(prob_ungrow_tensor, prob_base)
     
-}
+// }
 
 __global__ void UnupdateCellularKernel(
     const int* state_tensor_prev,
