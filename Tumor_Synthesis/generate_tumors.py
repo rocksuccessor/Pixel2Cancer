@@ -244,8 +244,10 @@ def save(step_state, run_id, i, step, img, cropped_img, density_organ_map, save_
     mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = step_state
     mask[mask > 0] = 1
     
-    save = sitk.GetImageFromArray(state_save)
+    save = sitk.GetImageFromArray(mask)
     sitk.WriteImage(save, os.path.join(save_path, 'state', save_name))
+    save_path1 = '/content/drive/MyDrive/dataset'
+    sitk.WriteImage(save, save_path1+'/state_func/'+save_name)
     
     save_list.append(save_name)
 
