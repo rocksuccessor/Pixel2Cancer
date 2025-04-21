@@ -233,6 +233,10 @@ def save(step_state, run_id, i, step, img, cropped_img, density_organ_map, save_
     img_out = map_to_CT_value(cropped_img, step_state, density_organ_map,
                             step, threshold, outrange_standard_val, organ_hu_lowerbound, organ_standard_val, start_point)
 
+
+    save = sitk.GetImageFromArray(step_state)
+    sitk.WriteImage(save, os.path.join(save_path, 'step_state_forward', save_name))
+
     # # save the result
     img_save = img.copy()
     img_save[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = img_out
@@ -243,11 +247,8 @@ def save(step_state, run_id, i, step, img, cropped_img, density_organ_map, save_
     mask = np.zeros_like(img_save)
     mask[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1] = step_state
     mask[mask > 0] = 1
-    
     save = sitk.GetImageFromArray(mask)
-    sitk.WriteImage(save, os.path.join(save_path, 'state', save_name))
-    save_path1 = '/content/drive/MyDrive/dataset'
-    sitk.WriteImage(save, save_path1+'/state_func/'+save_name)
+    sitk.WriteImage(save, os.path.join(save_path, 'mask', save_name))
     
     save_list.append(save_name)
 
