@@ -18,6 +18,6 @@ class _CellularUnupdate(torch.autograd.Function):
         Y_range, X_range, Z_range = ranges
         organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold = thresholds
         state_tensor_new = state_tensor.clone()
-        _C.update_cellular(state_tensor, density_state_tensor, Y_range, X_range, Z_range, grow_per_cell, max_try, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, flag, state_tensor_new)
+        _C.unupdate_cellular(state_tensor, density_state_tensor, Y_range, X_range, Z_range, grow_per_cell, max_try, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, flag, state_tensor_new)
         return state_tensor_new
     
