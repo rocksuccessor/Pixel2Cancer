@@ -49,6 +49,7 @@ ext_modules = [
     extension('Cellular._C', [
         os.path.join(extensions_dir, 'ext.cpp'),
         os.path.join(extensions_dir, 'cellular.cu'),
+        os.path.join(extensions_dir, 'uncellular.cu')
     ],
     include_dirs=[extensions_dir],
     define_macros=define_macros,
