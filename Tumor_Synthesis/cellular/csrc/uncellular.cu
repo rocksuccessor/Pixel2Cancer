@@ -1,3 +1,30 @@
+#include<assert.h>
+
+__device__ float probability(
+    const int target_val,
+    const int organ_hu_lowerbound, 
+    const int interval,
+){
+    // 3 level of tissue area
+    const int interval_1 = organ_hu_lowerbound;
+    const int interval_2 = organ_hu_lowerbound + interval;
+    const int interval_3 = organ_hu_lowerbound + interval * 2;
+
+    // probability of grow in each level organ tissue
+    if(target_val == interval_1){
+        return 1;
+    }
+    else if (target_val == interval_2){=
+        return 0.3;
+    }
+    else if (target_val == interval_3){
+        return 0.1;
+    }
+    else{
+        return 0;
+    }
+}
+
 __global__ void UngrowTensorKernel(
     bool* eligibility_tensor,
     float* prob_ungrow_tensor,
@@ -104,10 +131,10 @@ __global__ void UngrowTensorKernel(
             }
         }
 
-        ungrow_contribution = min(max_try/window_size, grow_per_cell/n)
+        float ungrow_contribution = min(max_try/window_size, grow_per_cell/n);
 
 
-        int = -1;
+        ind = -1;
         for(int dx = -1; dx <= 1; ++dx){
             for(int dy = -1; dy <= 1; ++dy){
                 for(int dz = -1; dz <= 1; ++dz){
@@ -128,7 +155,7 @@ __global__ void UngrowTensorKernel(
 
                     // check if the cell is eligible
                     if (eligible[ind]){
-                        prob_ungrow_tensor += ungrow_contribution * probability(original_density_state_map);
+                        prob_ungrow_tensor[pid] += ungrow_contribution * probability(pid, original_density_state_map);
                     }
                 }
             }
@@ -147,6 +174,7 @@ __global__ void UngrowTensorKernel(
 // }
 
 __global__ void UnupdateCellularKernel(
+    const int* ungrow_tensor,
     const int* state_tensor_prev,
     int* density_state_tensor,
     const int H,
@@ -177,7 +205,6 @@ __global__ void UnupdateCellularKernel(
             }
             
             // calculate current position
-            curandState state;
             const int y = pid / (W * D);
             const int x = (pid % (W * D)) / D;
             const int z = pid % D;
@@ -244,6 +271,7 @@ at::Tensor UnupdateCellular(
 
     // Launch the cuda kernel
     UnupdateCellularKernel<<<blocks, threads, 0, stream>>>(
+        ungrow_tensor,
         state_tensor_prev.contiguous().data_ptr<int>(),
         density_state_tensor.contiguous().data_ptr<int>(),
         H,
