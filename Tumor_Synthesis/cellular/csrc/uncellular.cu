@@ -1,6 +1,7 @@
 __global__ void UngrowTensorKernel(
+    bool* eligibility_tensor,
     const int* state_tensor_prev,
-    int* density_state_tensor,
+    int* original_density_state_map,
     const int H,
     const int W,
     const int D,
@@ -13,11 +14,24 @@ __global__ void UngrowTensorKernel(
     const int organ_standard_val,
     const int outrange_standard_val,
     const int threshold,
-    const bool flag,
-    int* state_tensor // (H, W, D)
+    const bool flag
 ){
     const int num_threads = gridDim.x * blockDim.x;
     const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    
+    for (int pid = tid; pid < H * W * D; pid += num_threads) {
+        // Commented Code is only needed if mass effect is enabled ig (I didn't recheck whether it is needed at least then)
+
+        // if(original_density_state_map[pid] == outrange_standard_val){
+        //     eligibility_tensor[pid] = (state_tensor_prev[pid] != organ_standard_val);
+        // }
+        // else{
+            // eligibility_tensor[pid] = ((state_tensor_prev[pid] != organ_standard_val) && (state_tensor_prev[pid] != outrange_standard_val));
+        // }
+
+        eligibility_tensor[pid] = ((state_tensor_prev[pid] != organ_standard_val) && (state_tensor_prev[pid] != outrange_standard_val));
+    }
 
     for (int pid = tid; pid < H * W * D; pid += num_threads) {
         const int curr_val = state_tensor_prev[pid];
@@ -29,14 +43,47 @@ __global__ void UngrowTensorKernel(
             continue; // Reverse Invasion principle
         }
 
-        int window_size = Y_range * X_range * Z_range - 1;
-        n = eligible_cells_in_window(window)
+        const int y = pid / (W * D);
+        const int x = (pid % (W * D)) / D;
+        const int z = pid % D;
 
-        def eligibility(pixel):
-            if original_density_state_tensor[pixel] == outrange_standard_val:
-                return pixel.val != organ_standard_val
-            else:
-                return pixel.val not in {organ_standard_val, outrange_standard_val}
+        // assert(Y_range % 2 == 1);
+        // assert(X_range % 2 == 1);
+        // assert(Z_range % 2 == 1);
+        // assert(Y_range > 0);
+        // assert(X_range > 0);
+        // assert(Z_range > 0);
+        // assert(Y_range < H);
+        // assert(X_range < W);
+        // assert(Z_range < D);
+
+        // To simplify the code for review as we are using these values anyway
+        assert(Y_range == 3);
+        assert(X_range == 3);
+        assert(Z_range == 3);
+
+        int window_size = Y_range * X_range * Z_range - 1;
+
+        constexpr int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
+        constexpr int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
+        bool eligible[] = {false, false, false, false, false, false, false, false};
+        int n = 0;
+        for(int i=0; i<8; ++i){
+            int y_shift = y + dy[i];
+            int x_shift = x + dx[i];
+            int z_shift = z;
+
+            if (y_shift < 0 || y_shift >= H || x_shift < 0 || x_shift >= W || z_shift < 0 || z_shift >= D){
+                continue;
+            }
+
+            // check if the cell is eligible
+            if (eligibility_tensor[(y_shift) * (W * D) + (x_shift) * D + (z_shift)]){
+                eligible[i] = true;
+            }
+
+            ++n;
+        }
 
         ungrow_contribution = min(max_try/window_size, grow_per_cell/n)
         atomicAdd(each eligible pixel, ungrow_contribution)
@@ -131,18 +178,23 @@ at::Tensor UnupdateCellular(
     // const size_t blocks = 32;
     // const size_t threads = 8;
 
-    float* ungrow_tensor;
-    cudaMalloc(ungrow_tensor, sizeof(float) * H * W * D);
+    const int n_pixels = H * W * D;
+
+    bool* eligibility_tensor;
+    cudaMalloc(eligibility_tensor, sizeof(bool) * n_pixels);
+
+    float* prob_ungrow_tensor;
+    cudaMalloc(prob_ungrow_tensor, sizeof(float) * n_pixels);
 
     int* ungrow_tensor;
-    cudaMalloc(ungrow_tensor, sizeof(int) * H * W * D);
+    cudaMalloc(ungrow_tensor, sizeof(int) * n_pixels);
 
     UngrowTensorKernel<<<blocks, threads, 0, stream>>>(
-        prob_ungrow_tensor
+        eligibility_tensor, prob_ungrow_tensor, ungrow_tensor
     )
 
-    collapse_ungrow_tensor(prob_ungrow_tensor, ungrow_tensor, 
-        prob_base = max(max_try, grow_per_cell))
+    // collapse_ungrow_tensor(prob_ungrow_tensor, ungrow_tensor, 
+    //     prob_base = max(max_try, grow_per_cell))
 
     // Launch the cuda kernel
     UnupdateCellularKernel<<<blocks, threads, 0, stream>>>(
