@@ -1,5 +1,7 @@
 __global__ void UngrowTensorKernel(
     bool* eligibility_tensor,
+    float* prob_ungrow_tensor,
+    int* ungrow_tensor,
     const int* state_tensor_prev,
     int* original_density_state_map,
     const int H,
@@ -31,6 +33,9 @@ __global__ void UngrowTensorKernel(
         // }
 
         eligibility_tensor[pid] = ((state_tensor_prev[pid] != organ_standard_val) && (state_tensor_prev[pid] != outrange_standard_val));
+
+        prob_ungrow_tensor[pid] = 0.0f;
+        ungrow_tensor[pid] = 0;
     }
 
     for (int pid = tid; pid < H * W * D; pid += num_threads) {
@@ -64,25 +69,36 @@ __global__ void UngrowTensorKernel(
 
         int window_size = Y_range * X_range * Z_range - 1;
 
-        constexpr int dx[] = {0, 1, 1, 1, 0, -1, -1, -1};
-        constexpr int dy[] = {-1, -1, 0, 1, 1, 1, 0, -1};
-        bool eligible[] = {false, false, false, false, false, false, false, false};
+        bool eligible[28];
+        for(int i=0; i<28; ++i){
+            eligible[i] = false;
+        }
+
         int n = 0;
-        for(int i=0; i<8; ++i){
-            int y_shift = y + dy[i];
-            int x_shift = x + dx[i];
-            int z_shift = z;
+        for(int dx = -1; dx <= 1; ++dx){
+            for(int dy = -1; dy <= 1; ++dy){
+                for(int dz = -1; dz <= 1; ++dz){
+                    // skip the center cell
+                    if (dx == 0 && dy == 0 && dz == 0){
+                        continue;
+                    }
 
-            if (y_shift < 0 || y_shift >= H || x_shift < 0 || x_shift >= W || z_shift < 0 || z_shift >= D){
-                continue;
+                    int y_shift = y + dy;
+                    int x_shift = x + dx;
+                    int z_shift = z + dz;
+
+                    if (y_shift < 0 || y_shift >= H || x_shift < 0 || x_shift >= W || z_shift < 0 || z_shift >= D){
+                        continue;
+                    }
+
+                    // check if the cell is eligible
+                    if (eligibility_tensor[(y_shift) * (W * D) + (x_shift) * D + (z_shift)]){
+                        eligible[n] = true;
+                    }
+
+                    ++n;
+                }
             }
-
-            // check if the cell is eligible
-            if (eligibility_tensor[(y_shift) * (W * D) + (x_shift) * D + (z_shift)]){
-                eligible[i] = true;
-            }
-
-            ++n;
         }
 
         ungrow_contribution = min(max_try/window_size, grow_per_cell/n)
