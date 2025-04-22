@@ -149,21 +149,21 @@ __global__ void UpdateCellularKernel(
                 // }
 
             
-                // Simulate interaction with vessel and organ boundary
-                if (mass_effect(curr_val, state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)], outrange_standard_val, organ_standard_val, threshold) == 0){
-                    // Get target value
-                    // if the pressure is higher than the threshold, then can invade and squeeze the vessel and organ boundary
-                    if (state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] > (outrange_standard_val + 2)){
-                        state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] = organ_standard_val;
-                        density_state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] = organ_hu_lowerbound;
-                    }
-                    // Apply pressure to the vessel and organ boundary
-                    else if (state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] >= (outrange_standard_val)){
-                        atomicAdd(state_tensor + (y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift), 1);
-                        // finished ++;
-                        continue;
-                    }
-                }
+                // // Simulate interaction with vessel and organ boundary
+                // if (mass_effect(curr_val, state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)], outrange_standard_val, organ_standard_val, threshold) == 0){
+                //     // Get target value
+                //     // if the pressure is higher than the threshold, then can invade and squeeze the vessel and organ boundary
+                //     if (state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] > (outrange_standard_val + 2)){
+                //         state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] = organ_standard_val;
+                //         density_state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] = organ_hu_lowerbound;
+                //     }
+                //     // Apply pressure to the vessel and organ boundary
+                //     else if (state_tensor[(y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift)] >= (outrange_standard_val)){
+                //         atomicAdd(state_tensor + (y + y_shift) * (W * D) + (x + x_shift) * D + (z + z_shift), 1);
+                //         // finished ++;
+                //         continue;
+                //     }
+                // }
 
 
                 // Simulate interaction with normal organ tissue
