@@ -75,6 +75,7 @@ __global__ void UngrowTensorKernel(
         }
 
         int n = 0;
+        int ind = -1;
         for(int dx = -1; dx <= 1; ++dx){
             for(int dy = -1; dy <= 1; ++dy){
                 for(int dz = -1; dz <= 1; ++dz){
@@ -82,6 +83,8 @@ __global__ void UngrowTensorKernel(
                     if (dx == 0 && dy == 0 && dz == 0){
                         continue;
                     }
+
+                    ++ind;
 
                     int y_shift = y + dy;
                     int x_shift = x + dx;
@@ -93,7 +96,7 @@ __global__ void UngrowTensorKernel(
 
                     // check if the cell is eligible
                     if (eligibility_tensor[(y_shift) * (W * D) + (x_shift) * D + (z_shift)]){
-                        eligible[n] = true;
+                        eligible[ind] = true;
                     }
 
                     ++n;
@@ -102,11 +105,38 @@ __global__ void UngrowTensorKernel(
         }
 
         ungrow_contribution = min(max_try/window_size, grow_per_cell/n)
-        atomicAdd(each eligible pixel, ungrow_contribution)
+
+
+        int = -1;
+        for(int dx = -1; dx <= 1; ++dx){
+            for(int dy = -1; dy <= 1; ++dy){
+                for(int dz = -1; dz <= 1; ++dz){
+                    // skip the center cell
+                    if (dx == 0 && dy == 0 && dz == 0){
+                        continue;
+                    }
+
+                    ++ind;
+
+                    int y_shift = y + dy;
+                    int x_shift = x + dx;
+                    int z_shift = z + dz;
+
+                    if (y_shift < 0 || y_shift >= H || x_shift < 0 || x_shift >= W || z_shift < 0 || z_shift >= D){
+                        continue;
+                    }
+
+                    // check if the cell is eligible
+                    if (eligible[ind]){
+                        prob_ungrow_tensor += ungrow_contribution * probability(original_density_state_map);
+                    }
+                }
+            }
+        }
     }
 
     for (int pid = tid; pid < H * W * D; pid += num_threads) {
-        ungrow_tensor[pid] = round(ungrow_tensor[pid]);
+        ungrow_tensor[pid] = round(prob_ungrow_tensor[pid]);
     }
 }
 
