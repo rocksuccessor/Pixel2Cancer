@@ -1,9 +1,16 @@
+#include <ATen/ATen.h>
+#include <ATen/cuda/CUDAContext.h>
+#include <c10/cuda/CUDAGuard.h>
+#include <float.h>
+#include <math.h>
+#include <tuple>
+#include <curand_kernel.h>
 #include<assert.h>
 
 __device__ float probability(
     const int target_val,
     const int organ_hu_lowerbound, 
-    const int interval,
+    const int interval
 ){
     // 3 level of tissue area
     const int interval_1 = organ_hu_lowerbound;
@@ -14,7 +21,7 @@ __device__ float probability(
     if(target_val == interval_1){
         return 1;
     }
-    else if (target_val == interval_2){=
+    else if (target_val == interval_2){
         return 0.3;
     }
     else if (target_val == interval_3){
@@ -155,7 +162,7 @@ __global__ void UngrowTensorKernel(
 
                     // check if the cell is eligible
                     if (eligible[ind]){
-                        prob_ungrow_tensor[pid] += ungrow_contribution * probability(pid, original_density_state_map);
+                        prob_ungrow_tensor[pid] += ungrow_contribution * probability(original_density_state_map[pid], organ_hu_lowerbound, interval);
                     }
                 }
             }
@@ -254,13 +261,13 @@ at::Tensor UnupdateCellular(
     const int n_pixels = H * W * D;
 
     bool* eligibility_tensor;
-    cudaMalloc(eligibility_tensor, sizeof(bool) * n_pixels);
+    cudaMalloc(&eligibility_tensor, sizeof(bool) * n_pixels);
 
     float* prob_ungrow_tensor;
-    cudaMalloc(prob_ungrow_tensor, sizeof(float) * n_pixels);
+    cudaMalloc(&prob_ungrow_tensor, sizeof(float) * n_pixels);
 
     int* ungrow_tensor;
-    cudaMalloc(ungrow_tensor, sizeof(int) * n_pixels);
+    cudaMalloc(&ungrow_tensor, sizeof(int) * n_pixels);
 
     UngrowTensorKernel<<<blocks, threads, 0, stream>>>(
         eligibility_tensor, prob_ungrow_tensor, ungrow_tensor
