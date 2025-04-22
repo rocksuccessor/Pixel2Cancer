@@ -52,6 +52,8 @@ __global__ void UngrowTensorKernel(
     const int threshold,
     const bool flag
 ){
+    const int interval = (outrange_standard_val - organ_hu_lowerbound) / 3;
+    
     const int num_threads = gridDim.x * blockDim.x;
     const int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -270,8 +272,25 @@ at::Tensor UnupdateCellular(
     cudaMalloc(&ungrow_tensor, sizeof(int) * n_pixels);
 
     UngrowTensorKernel<<<blocks, threads, 0, stream>>>(
-        eligibility_tensor, prob_ungrow_tensor, ungrow_tensor
-    )
+        eligibility_tensor,
+        prob_ungrow_tensor,
+        ungrow_tensor,
+        state_tensor_prev.contiguous().data_ptr<int>(),
+        density_state_tensor.contiguous().data_ptr<int>(),
+        H,
+        W,
+        D,
+        Y_range,
+        X_range,
+        Z_range,
+        grow_per_cell,
+        max_try,
+        organ_hu_lowerbound,
+        organ_standard_val,
+        outrange_standard_val,
+        threshold,
+        flag
+    );
 
     // collapse_ungrow_tensor(prob_ungrow_tensor, ungrow_tensor, 
     //     prob_base = max(max_try, grow_per_cell))
@@ -296,5 +315,6 @@ at::Tensor UnupdateCellular(
         flag,
         state_tensor.contiguous().data_ptr<int>() // (H, W, D)
     );
+
     return state_tensor;
 }
