@@ -10,7 +10,8 @@
 __device__ float probability(
     const int target_val,
     const int organ_hu_lowerbound, 
-    const int interval
+    const int interval,
+    const int outrange_standard_val
 ){
     // 3 level of tissue area
     const int interval_1 = organ_hu_lowerbound;
@@ -27,8 +28,11 @@ __device__ float probability(
     else if (target_val == interval_3){
         return 0.1;
     }
+    else if (target_val == outrange_standard_val){
+        return 0.0;
+    }
     else{
-        return 0;
+        assert(false && "Invalid target_val");
     }
 }
 
@@ -162,7 +166,7 @@ __global__ void UngrowTensorKernel(
 
                     // check if the cell is eligible
                     if (eligible[ind]){
-                        prob_ungrow_tensor[pid] += ungrow_contribution * probability(original_density_state_map[pid], organ_hu_lowerbound, interval);
+                        prob_ungrow_tensor[pid] += ungrow_contribution * probability(original_density_state_map[pid], organ_hu_lowerbound, interval, outrange_standard_val);
                     }
                 }
             }
