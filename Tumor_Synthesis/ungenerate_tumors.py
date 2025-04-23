@@ -50,6 +50,11 @@ def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size
 			continue
 		save(temp,run_id,0,i)
 
+		print(f"step: {i}")
+		unique_values, counts = np.unique(temp, return_counts=True)
+		for value, count in zip(unique_values, counts):
+			print(f"value: {value} times: {count} ")
+
 
 # def reverse(image, density_organ_state, ...):
 # 	current_state = unmap(image)
