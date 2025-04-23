@@ -21,11 +21,15 @@ def load_state(path):
 	return img
 
 def isEnd(current_state):
-	global current_unupdates
-	current_unupdates += 1
-	if current_unupdates >= MAX_UNUPDATES:
-		return True
-	return not (np.logical_and(current_state > 0, current_state < outrange_standard_val)).any()
+    global current_unupdates
+    current_unupdates += 1
+    if current_unupdates >= MAX_UNUPDATES:
+        return True
+
+    # Move tensor to CPU and convert to NumPy
+    current_state_np = current_state.cpu().numpy()
+    return not (np.logical_and(current_state_np > 0, current_state_np < outrange_standard_val)).any()
+
 
 def save(step_state, run_id, i, step):
 	save_name = f"{run_id}_{i}_{step}.nii.gz"
