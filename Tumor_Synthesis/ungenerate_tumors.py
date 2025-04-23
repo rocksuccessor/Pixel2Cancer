@@ -56,7 +56,7 @@ def temp_main():
 	state = load_state(config.state_path_for_reverse)
 	state[state > threshold] = threshold
 	state[state == 0] = outrange_standard_val
-	assert np.sum(state >= threshold) == 0
+	assert np.sum(state > threshold) == 0
 	save_frequency = 10
 	ungrow_tumor(state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map)
 
