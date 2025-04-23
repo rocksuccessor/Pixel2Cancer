@@ -35,7 +35,7 @@ def save(step_state, run_id, i, step):
 def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map):
 	i = 0
 	while(not isEnd(current_state)):
-		current_state = unupdate_cellular(current_state, density_organ_state, (kernel_size[0], kernel_size[1], kernel_size[2]), (organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold))
+		current_state = unupdate_cellular(current_state, density_organ_state, (kernel_size[0], kernel_size[1], kernel_size[2]), (organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold),0)
 		current_state[current_state <= 0] = outrange_standard_val
 		temp = current_state.cpu().numpy().copy()
         # print(np.sum(temp==0))
