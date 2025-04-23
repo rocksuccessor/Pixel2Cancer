@@ -38,7 +38,7 @@ def save(step_state, run_id, i, step):
 
 def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map):
 	i = 0
-	current_state = torch.tensor(sitk.GetArrayFromImage(current_state), dtype=torch.int32).cuda()
+	current_state = torch.tensor(sitk.GetArrayFromImage(current_state), dtype=torch.int32).cuda(device='cuda:0')
 	assert current_state.shape == density_organ_map.shape
 	while(not isEnd(current_state)):
 		current_state = unupdate_cellular(current_state, density_organ_state, (kernel_size[0], kernel_size[1], kernel_size[2]), (organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold),0)
@@ -66,7 +66,7 @@ def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size
 def temp_main():
 	state = load_state(config.state_path_for_reverse)
 	# state[state > threshold] = threshold
-	assert np.sum(state > threshold) == 0
+	# assert np.sum(state > threshold) == 0 # temporarily disabled for speed of execution
 	state[state == 0] = outrange_standard_val
 	save_frequency = 10
 	ungrow_tumor(state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map)

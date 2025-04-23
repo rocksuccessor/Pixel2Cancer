@@ -170,7 +170,8 @@ __global__ void UngrowTensorKernel(
     }
 
     for (int pid = tid; pid < H * W * D; pid += num_threads) {
-        ungrow_tensor[pid] = round(prob_ungrow_tensor[pid]);
+        // ungrow_tensor[pid] = round(prob_ungrow_tensor[pid]);
+        ungrow_tensor[pid] = ceil(prob_ungrow_tensor[pid]);
     }
 }
 
