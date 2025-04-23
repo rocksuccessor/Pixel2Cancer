@@ -64,9 +64,11 @@ def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size
 
 def temp_main():
 	state = load_state(config.state_path_for_reverse)
-	state[state > threshold] = threshold
+	# state[state > threshold] = threshold
+	assert np.sum(state > threshold) == 0
 	state[state == 0] = outrange_standard_val
 	save_frequency = 10
+	assert state.shape == density_organ_map.shape
 	ungrow_tumor(state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map)
 
 def main():
