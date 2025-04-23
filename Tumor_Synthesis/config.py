@@ -1,5 +1,5 @@
 volume_path = '/content/drive/MyDrive/dataset/liver_105.nii'
 segmentation_path = '/content/drive/MyDrive/dataset/label_liver_105.nii'
 file_id = 'liver_105'
-
-state_path = raise RuntimeError("state_path not filled in config.py")
+save_path_density_organ_map='/content/drive/MyDrive/dataset/20250417_161412_density_organ_map.nii'
+state_path_for_reverse = '/content/drive/MyDrive/dataset'
