@@ -76,9 +76,6 @@ __global__ void UngrowTensorKernel(
 
     for (int pid = tid; pid < H * W * D; pid += num_threads) {
         const int curr_val = state_tensor_prev[pid];
-        if (curr_val == organ_standard_val || curr_val >= outrange_standard_val){
-            continue;
-        }
 
         if(curr_val == threshold){
             continue; // Reverse Invasion principle
