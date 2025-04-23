@@ -226,7 +226,7 @@ __global__ void UnupdateCellularKernel(
                 atomicAdd(state_tensor + (y) * (W * D) + (x) * D + (z), -1);
             }
             
-            atomicAdd(state_tensor + (y) * (W * D) + (x) * D + (z), ungrow_tensor[pid]);
+            atomicAdd(state_tensor + (y) * (W * D) + (x) * D + (z), -ungrow_tensor[pid]);
         }
     }
 }
