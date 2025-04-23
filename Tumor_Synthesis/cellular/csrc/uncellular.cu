@@ -137,7 +137,7 @@ __global__ void UngrowTensorKernel(
             }
         }
 
-        float ungrow_contribution = min(max_try/window_size, grow_per_cell/n);
+        float ungrow_contribution = min(((float)max_try)/window_size, ((float)grow_per_cell)/n);
 
 
         ind = -1;
