@@ -2,7 +2,7 @@ import torch
 from Cellular import _C
 
 def unupdate_cellular(state_tensor, density_state_tensor, ranges, thresholds, flag, grow_per_cell=1, max_try=-1):
-    return _CellularUnupdate.apply(ranges, max_try, state_tensor, density_state_tensor, thresholds, flag)
+    return _CellularUnupdate.apply(ranges,grow_per_cell, max_try, state_tensor, density_state_tensor, thresholds, flag)
 
 class _CellularUnupdate(torch.autograd.Function):
     @staticmethod
