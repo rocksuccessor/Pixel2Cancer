@@ -17,7 +17,7 @@ density_organ_map=sitk.ReadImage(config.save_path_density_organ_map)
 density_organ_map = sitk.GetArrayFromImage(density_organ_map)
 density_organ_state = torch.tensor(density_organ_map, dtype=torch.int32).cuda(device='cuda:0')
 def load_state(path):
-	img=sitk.ReadImage(config.path)
+	img=sitk.ReadImage(path)
 	return img
 
 def isEnd(current_state):
