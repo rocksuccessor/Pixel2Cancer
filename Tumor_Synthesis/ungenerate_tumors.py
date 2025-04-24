@@ -131,7 +131,7 @@ def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size
 
 def temp_main():
     # Load the state (assuming it's a numpy array)
-    state = sitk.GetArrayFromImage(sitk.ReadImage(config.state_path))
+    state = sitk.GetArrayFromImage(sitk.ReadImage(config.state_path_for_reverse))
     state[state == 0] = outrange_standard_val
     assert np.sum(state >= threshold) == 0
     
