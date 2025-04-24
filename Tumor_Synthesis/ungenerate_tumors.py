@@ -173,7 +173,7 @@ def temp_main():
         density_organ_map, img, cropped_img, min_x, max_x, min_y, max_y, min_z, max_z, save_list
     )
     
-    def main():
+def main():
         temp_main()
 
 if __name__ == "__main__":
