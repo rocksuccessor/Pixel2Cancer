@@ -6,6 +6,7 @@ import os
 import cv2
 from cellular import unupdate_cellular
 from constants import *
+import time  # Needed for run_id generation
 
 # Constants
 MAX_UNUPDATES = 100
@@ -170,5 +171,4 @@ def main():
     temp_main()
 
 if _name_ == "_main_":
-    import time  # Needed for run_id generation
     main()
