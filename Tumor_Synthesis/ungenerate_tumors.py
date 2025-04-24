@@ -8,6 +8,7 @@ import torch
 
 import config
 from constants import *
+Organ_List = {'liver': [1,2], 'pancreas': [1,2], 'kidney': [1,2]}
 
 run_id = f"{config.file_id}{time.strftime('%Y%m%d%H%M%S')}"
 MAX_UNUPDATES = 100
