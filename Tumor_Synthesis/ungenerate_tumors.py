@@ -114,7 +114,7 @@ def save(step_state, run_id, i, step, img, cropped_img, density_organ_map, save_
     
     save_list.append(save_name)
 
-def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map):
+def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map, img, cropped_img, min_x, max_x, min_y, max_y, min_z, max_z, save_list):
 	i = 0
 	current_state = torch.tensor(sitk.GetArrayFromImage(current_state), dtype=torch.int32).cuda(device='cuda:0')
 	assert current_state.shape == density_organ_map.shape
@@ -127,7 +127,7 @@ def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size
 		i += 1
 		if i % save_frequency != 0:
 			continue
-		save(temp,run_id,0,i)
+		save(temp, run_id, 0, i, img, cropped_img, density_organ_map, save_path, min_x, max_x, min_y, max_y, min_z, max_z, threshold, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, None, save_list)
 
 		print(f"step: {i}")
 		unique_values, counts = np.unique(temp, return_counts=True)
@@ -142,16 +142,39 @@ def ungrow_tumor(current_state, density_organ_state, save_frequency, kernel_size
 # 	return reverse_map_to_CT_values(tumor_out)
 
 def temp_main():
-	state = load_state(config.state_path_for_reverse)
-	# state[state > threshold] = threshold
-	# assert np.sum(state > threshold) == 0 # temporarily disabled for speed of execution
-	state[state == 0] = outrange_standard_val
-	save_frequency = 10
-	ungrow_tumor(state, density_organ_state, save_frequency, kernel_size, steps, organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold, density_organ_map)
+    state = load_state(config.state_path_for_reverse)
+    # state[state > threshold] = threshold
+    # assert np.sum(state > threshold) == 0 # temporarily disabled for speed of execution
+    state[state == 0] = outrange_standard_val
+    save_frequency = 10
 
-def main():
+    # img = sitk.ReadImage(file + '/ct.nii.gz')
+    img = sitk.ReadImage(config.volume_path)
+    img = sitk.GetArrayFromImage(img)
+    mask = sitk.ReadImage(config.segmentation_path)
+    mask = sitk.GetArrayFromImage(mask)
 
-	temp_main()
+    # load organ and quantify
+    # get the organ region
+    organ_region = np.where(np.isin(mask, Organ_List['liver']))
+    min_x = min(organ_region[0])
+    max_x = max(organ_region[0])
+    min_y = min(organ_region[1])
+    max_y = max(organ_region[1])
+    min_z = min(organ_region[2])
+    max_z = max(organ_region[2])
+
+    
+
+    save_list = []
+    ungrow_tumor(
+        state, density_organ_state, save_frequency, kernel_size, steps,
+        organ_hu_lowerbound, organ_standard_val, outrange_standard_val, threshold,
+        density_organ_map, img, cropped_img, min_x, max_x, min_y, max_y, min_z, max_z, save_list
+    )
+    
+    def main():
+        temp_main()
 
 if __name__ == "__main__":
 	main()
