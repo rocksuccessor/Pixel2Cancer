@@ -164,6 +164,7 @@ def temp_main():
     max_y = max(organ_region[1])
     min_z = min(organ_region[2])
     max_z = max(organ_region[2])
+    cropped_img = img[min_x:max_x+1, min_y:max_y+1, min_z:max_z+1]
 
     
 
